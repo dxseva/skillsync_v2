@@ -61,6 +61,7 @@ export default function StepResults({
     fetched.current = false;
     setJobs([]);
     setError("");
+    setSelectedIdx(0);
     setLoading(true);
     doSearch();
   };

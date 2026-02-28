@@ -27,13 +27,16 @@ logger = logging.getLogger("skillsync")
 app = FastAPI(title="SkillSync Pro API", version="2.0.0")
 
 # CORS — allow configurable origins via env, fallback to dev defaults
-_cors_origins = os.environ.get(
+_cors_raw = os.environ.get(
     "CORS_ORIGINS", "http://localhost:5173,http://localhost:3000"
-).split(",")
+)
+_cors_origins = [o.strip() for o in _cors_raw.split(",") if o.strip()]
+if not _cors_origins:
+    _cors_origins = ["http://localhost:5173", "http://localhost:3000"]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[o.strip() for o in _cors_origins],
+    allow_origins=_cors_origins,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -127,10 +130,17 @@ def search_jobs(req: SearchRequest):
         }
 
     for rec in recs:
-        req_text = rec.get("requirement", "")
-        resp_text = rec.get("responsibility", "")
-        snippet_ru = (req_text + " " + resp_text).strip()
-        rec["snippet_en"] = translate_ru_to_en(snippet_ru) if snippet_ru else ""
+        try:
+            req_text = rec.get("requirement", "")
+            resp_text = rec.get("responsibility", "")
+            snippet_ru = (req_text + " " + resp_text).strip()
+            rec["snippet_en"] = translate_ru_to_en(snippet_ru) if snippet_ru else ""
+            employer_ru = rec.get("employer", "")
+            rec["employer_en"] = translate_ru_to_en(employer_ru) if employer_ru else ""
+        except Exception as e:
+            logger.warning("Translation failed for job %s: %s", rec.get("id", "?"), e)
+            rec.setdefault("snippet_en", "")
+            rec.setdefault("employer_en", "")
 
     logger.info("Search complete: %d results for goal=%r", len(recs), req.goal)
     return {"jobs": recs, "message": f"Found {len(recs)} matching vacancies."}
