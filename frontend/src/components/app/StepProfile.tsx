@@ -19,6 +19,7 @@ const DEFAULT_CITIES = [
 
 export default function StepProfile({ goal, initialProfile, onNext, onBack }: Props) {
   const [cities, setCities] = useState<string[]>(DEFAULT_CITIES);
+  const [citiesLoading, setCitiesLoading] = useState(true);
   const [citiesError, setCitiesError] = useState(false);
   const [skills, setSkills] = useState(initialProfile?.skills ?? "");
   const [skillLevel, setSkillLevel] = useState(initialProfile?.skill_level ?? "intermediate");
@@ -28,14 +29,22 @@ export default function StepProfile({ goal, initialProfile, onNext, onBack }: Pr
   const [relocation, setRelocation] = useState(initialProfile?.relocation ?? false);
 
   useEffect(() => {
+    let cancelled = false;
+    setCitiesLoading(true);
     getCities()
       .then((c) => {
-        setCities(c);
-        setCitiesError(false);
+        if (!cancelled) {
+          setCities(c);
+          setCitiesError(false);
+        }
       })
       .catch(() => {
-        setCitiesError(true);
+        if (!cancelled) setCitiesError(true);
+      })
+      .finally(() => {
+        if (!cancelled) setCitiesLoading(false);
       });
+    return () => { cancelled = true; };
   }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -119,8 +128,26 @@ export default function StepProfile({ goal, initialProfile, onNext, onBack }: Pr
         </div>
 
         <div>
-          <label htmlFor="city">Preferred city</label>
-          <select id="city" value={city} onChange={(e) => setCity(e.target.value)}>
+          <label htmlFor="city">
+            Preferred city
+            {citiesLoading && (
+              <span
+                style={{
+                  display: "inline-block",
+                  width: 12,
+                  height: 12,
+                  border: "2px solid var(--border-primary)",
+                  borderTopColor: "var(--accent-purple)",
+                  borderRadius: "50%",
+                  animation: "spin 0.7s linear infinite",
+                  marginLeft: 6,
+                  verticalAlign: "middle",
+                }}
+                aria-label="Loading cities"
+              />
+            )}
+          </label>
+          <select id="city" value={city} onChange={(e) => setCity(e.target.value)} disabled={citiesLoading}>
             {cities.map((c) => (
               <option key={c} value={c}>{c}</option>
             ))}

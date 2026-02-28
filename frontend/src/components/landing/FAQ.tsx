@@ -73,6 +73,7 @@ export default function FAQ() {
                 onClick={() => setOpen(isOpen ? null : i)}
                 role="button"
                 aria-expanded={isOpen}
+                aria-controls={`faq-answer-${i}`}
                 tabIndex={0}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" || e.key === " ") {
@@ -106,6 +107,8 @@ export default function FAQ() {
                 <AnimatePresence>
                   {isOpen && (
                     <motion.p
+                      id={`faq-answer-${i}`}
+                      role="region"
                       initial={{ height: 0, opacity: 0 }}
                       animate={{ height: "auto", opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
